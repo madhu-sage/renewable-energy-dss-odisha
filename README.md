@@ -16,7 +16,7 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 
 **Key Innovation:** Multi-model ML framework combining unsupervised K-Means spatial clustering, supervised Random Forest classification, XGBoost cross-validation, Analytical Hierarchy Process (AHP) expert knowledge integration — with SHAP explainability and GridSearchCV hyperparameter optimization.
 
-> ⚠️ **Note on Raw Data:** Raster files (.tif, .gpkg >100MB each) are not hosted in this repository due to GitHub size limits. All Python scripts, the processed `block_features.csv` input, and Phase 5 outputs are included. Contact the project lead for raw data access.
+> ⚠️ **Note on Raw Data:** Raster files (.tif, .gpkg >100MB each) are not hosted in this repository due to GitHub size limits. Processed archives (.rar), CSVs, GeoJSONs, and all Python scripts are included. Contact the project lead for raw raster access.
 
 ---
 
@@ -24,10 +24,10 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 
 | Member | Role | Contribution |
 |--------|------|--------------|
-| **Ashutosh Singh** | **Project Lead & System Architect** | Complete project planning and system design, Phase 1 data collection and QGIS implementation, Python console automation (Phases 1–2), coordination across all 6 phases |
+| **Ashutosh Singh** | **Project Lead & System Architect** | Complete project planning and system design, Phase 1 data collection and QGIS implementation, Phase 4 block-level upgrade (314 blocks), coordination across all 6 phases |
 | **Aryan Singh** | GIS Developer | Phase 2 spatial constraint modeling and buffer analysis |
 | **Keshav** | GIS Analyst | Phase 3 MCDA suitability scoring and raster processing |
-| **Astitva Tripathi** | GIS / Data Processing | Phase 4 block-level zonal statistics and feature extraction |
+| **Astitva Tripathi** | GIS / Data Processing | Phase 4 district-level zonal statistics and initial feature extraction (30 districts) |
 | **Divyanshu Puri** | ML Engineer & GIS Developer | Phase 5 complete ML pipeline — K-Means, Random Forest, XGBoost, SHAP |
 | **Madhusudhan** | Data Processing / GIS Developer | Phase 6 DSS visualization and web output |
 
@@ -37,12 +37,12 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 |----------------|-------------|
 | Project Architecture & Phase Workflow Design | Ashutosh Singh |
 | Phase 1 — Data Collection & QGIS Preprocessing | Ashutosh Singh |
-| Phase 2 — Constraint Mapping (QGIS + Python) | Ashutosh Singh, Aryan Singh |
+| Phase 2 — Constraint Mapping (QGIS) | Aryan Singh |
 | Phase 3 — MCDA Suitability Modeling | Keshav |
-| Phase 4 — Block-Level Feature Extraction | Astitva Tripathi |
+| Phase 4 — District-Level Feature Extraction (30 units) | Astitva Tripathi |
+| Phase 4 — Block-Level Upgrade (314 units) | Ashutosh Singh |
 | Phase 5 — ML Pipeline & Model Training | Divyanshu Puri |
 | Phase 6 — Web DSS & Visualization | Madhusudhan |
-| Python Console Automation (Phases 1–2) | Ashutosh Singh |
 | Machine Learning Model Design | Divyanshu Puri |
 | UI / Web Dashboard | *(Phase 6 — In Progress)* |
 
@@ -55,7 +55,7 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 ### Phase 1: Data Acquisition & Preprocessing ✅
 **Lead:** Ashutosh Singh
 
-**Objective:** Assemble, clip, reproject, and align 14 geospatial datasets covering all factors relevant to renewable energy siting in Odisha.
+**Objective:** Assemble, clip, reproject, and align 14 geospatial datasets covering all factors relevant to renewable energy siting in Odisha. All processing performed manually in QGIS 3.x.
 
 #### Datasets Collected (14 Total)
 
@@ -88,9 +88,9 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 ---
 
 ### Phase 2: Spatial Constraint Modeling ✅
-**Lead:**  Aryan Singh
+**Lead:** Aryan Singh
 
-**Objective:** Create a binary constraint map identifying all locations legally prohibited or physically unsuitable for energy infrastructure.
+**Objective:** Create a binary constraint map identifying all locations legally prohibited or physically unsuitable for energy infrastructure. All processing performed manually in QGIS 3.x.
 
 #### Constraints Applied
 
@@ -113,7 +113,7 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 ### Phase 3: Suitability Modeling — MCDA ✅
 **Lead:** Keshav
 
-**Objective:** Create three normalized suitability score rasters (Solar, Wind, Biomass) using expert-weighted Multi-Criteria Decision Analysis.
+**Objective:** Create three normalized suitability score rasters (Solar, Wind, Biomass) using expert-weighted Multi-Criteria Decision Analysis. All processing performed manually in QGIS 3.x.
 
 **Formula:** `Suitability = Σ(normalized_factor × weight) × constraint_mask`
 
@@ -149,26 +149,41 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 #### Classification Decision — Why Percentile?
 > Fixed thresholds (e.g., GHI > 5.5) were initially applied but abandoned after finding **68% of all solar pixels** fell in one class — Odisha has relatively uniform irradiance across the state. Switched to **percentile-based classification** ensuring exactly 20% of pixels per class (Very High / High / Moderate / Low / Unsuitable). This produces a balanced, statistically meaningful and cartographically useful map.
 
-**Outputs:** `solar_suitability.tif`, `wind_suitability.tif`, `biomass_suitability.tif`
+**Outputs:** `solar_suitability.tif`, `wind_suitability.tif`, `biomass_suitability.tif` (included in phase3.rar)
 
 ---
 
-### Phase 4: Block-Level Feature Extraction ✅
-**Lead:** Astitva Tripathi
+### Phase 4: Feature Extraction ✅
+**District Level Lead:** Astitva Tripathi | **Block Level Lead:** Ashutosh Singh
 
-**Objective:** Extract mean zonal statistics per administrative block to produce the 314-row ML training dataset.
+**Objective:** Extract mean zonal statistics per administrative unit to produce the ML training dataset. Work was done in two stages — district level first, then upgraded to block level.
+
+#### Stage 1 — District Level (Astitva Tripathi)
+
+Initial feature extraction performed at 30 district level using QGIS zonal statistics.
+
+| Output | Description |
+|--------|-------------|
+| `district_features.csv` | 30 districts × 7 features |
+| `top_solar_zones.geojson` | High-potential solar zones at district scale |
+| `top_wind_zones.geojson` | High-potential wind zones at district scale |
+| `top_biomass_zones.geojson` | High-potential biomass zones at district scale |
+
+#### Stage 2 — Block Level Upgrade (Ashutosh Singh)
+
+District level (30 samples) was insufficient for statistically valid 5-fold cross-validation. Ashutosh upgraded the pipeline to block level (314 units) — a 10× sample increase enabling robust ML training.
 
 #### Scale Selection Rationale
 
 | Scale | Units | Decision | Reason |
 |-------|-------|----------|--------|
-| District | 30 | ❌ Rejected | Too small for statistically valid 5-fold CV |
-| **Block** | **314** | ✅ **Selected** | 10× sample increase — robust ML training |
+| District | 30 | ❌ Initial attempt | Too small for statistically valid 5-fold CV |
+| **Block** | **314** | ✅ **Final selection** | 10× sample increase — robust ML training |
 | Gram Panchayat | ~6,000 | ❌ Rejected | Too granular for 267m raster — spatial autocorrelation issues |
 
 **Block boundary source:** Official Census of India 2021 — `Odisha_Admin_Block_BND_2021.shp`
 
-#### Technical Issues Resolved
+#### Technical Issues Resolved (Block Level)
 
 **Raster Alignment:** Four rasters had a 1-pixel shape mismatch (2012×2421 vs reference 2013×2422). All four reprojected to exactly match reference solar raster grid before zonal statistics.
 
@@ -186,15 +201,15 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 | dist_sub_mean | dist_sub_aligned.tif | 43.492 | km |
 | constraint_pct | constraint_map_267.tif × 100 | 72.39 | % buildable |
 
-**Output:** `block_features.csv` — 314 rows × 8 columns ✅ Zero missing values confirmed
+**Block-level output:** `block_features.csv` — 314 rows × 7 features ✅ Zero missing values
 
-#### GIS Zone Outputs
+#### GIS Zone Outputs (Block Level)
 
 | File | Count | Area |
 |------|-------|------|
-| `top_solar_zones.gpkg` | 1,302 zones | 102,059 km² |
-| `top_wind_zones.gpkg` | 133 zones | 3,783 km² |
-| `top_biomass_zones.gpkg` | 3,022 zones | 33,410 km² |
+| `top_solar_zones.geojson` | 1,302 zones | 102,059 km² |
+| `top_wind_zones.geojson` | 133 zones | 3,783 km² |
+| `top_biomass_zones.geojson` | 3,022 zones | 33,410 km² |
 
 ---
 
@@ -222,9 +237,9 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 - ✅ **Correlation Analysis** — No feature pairs exceeded 0.85 threshold
 - ✅ **k-Optimization** — Elbow + Silhouette both validate k=4
 - ✅ **GridSearchCV** — 18 hyperparameter combinations, best params applied
-- ✅ **Ablation Study** — wind_mean confirmed most critical feature (6.7% drop)
+- ✅ **Ablation Study** — wind_mean confirmed most critical feature (6.7% drop when removed)
 - ✅ **MAUP Analysis** — Block vs district scale prediction shift quantified
-- ✅ **SHAP Explainability** — Per-block model interpretation, not just global importance
+- ✅ **SHAP Explainability** — Per-block model interpretation, publication-ready
 
 #### Model Performance
 
@@ -243,22 +258,33 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 | 🟠 SOLAR | 250 | 80% | High irradiance dominant across Odisha |
 | 🟣 HYBRID | 62 | 20% | Mixed-resource transition zones |
 | 🔵 WIND | 2 | 0.6% | Limited high-wind corridors |
-| 🟢 BIOMASS | 0 | 0% | Insufficient standalone signal from population proxy |
+| 🟢 BIOMASS | 0 | 0% | Insufficient standalone signal |
 
 #### Phase 5 Output Files
 
-| File | Description |
-|------|-------------|
-| `block_final_predictions.csv` | 314 blocks with cluster, RF prediction, confidence, final label |
-| `random_forest_model.pkl` | Trained and tuned RF model (serialized) |
-| `correlation_heatmap.png` | Feature multicollinearity matrix |
-| `optimal_k_selection.png` | Elbow + Silhouette validation curves |
-| `feature_importance.png` | RF feature importance bar chart |
-| `shap_summary.png` | SHAP value summary — model explainability |
-| `confusion_matrix.png` | RF prediction accuracy heatmap |
-| `ahp_validation.png` | AHP expert weights vs RF importance comparison |
-| `ablation_study.png` | Feature contribution quantification chart |
-| `model_comparison.csv` | RF vs XGBoost side-by-side accuracy table |
+| File | Location | Description |
+|------|----------|-------------|
+| `block_final_predictions.csv` | outputs/ | 314 blocks with cluster, RF prediction, confidence, final label |
+| `random_forest_model.pkl` | outputs/ | Trained and tuned RF model |
+| `block_features.csv` | outputs/ | ML input features (314 blocks × 7 features) |
+| `block_clusters.csv` | outputs/ | K-Means cluster assignments |
+| `model_comparison.csv` | outputs/ | RF vs XGBoost accuracy comparison |
+| `ablation_study.csv` | outputs/ | Per-feature accuracy drop |
+| `ahp_comparison.csv` | outputs/ | AHP weight vs RF importance |
+| `correlation_heatmap.png` | outputs/ | Feature multicollinearity matrix |
+| `optimal_k_selection.png` | outputs/ | Elbow + Silhouette validation |
+| `feature_importance.png` | outputs/ | RF feature importance |
+| `confusion_matrix.png` | outputs/ | Prediction accuracy heatmap |
+| `ahp_validation.png` | outputs/ | AHP vs RF comparison chart |
+| `ablation_study.png` | outputs/ | Feature contribution chart |
+| `cluster_distribution.png` | outputs/ | K-Means spatial cluster map |
+| `confidence_distribution.png` | outputs/ | Prediction confidence histogram |
+| `model_comparison.png` | outputs/ | RF vs XGBoost bar chart |
+| `final_predictions_simple.csv` | new_output/ | Simplified predictions (legacy run) |
+| `model_simple.pkl` | new_output/ | Simplified model version |
+| `ablation_study.csv` | new_output/ | Ablation results (simplified run) |
+| `ahp_comparison_simple.csv` | new_output/ | AHP comparison (simplified run) |
+| `model_comparison_simple.csv` | new_output/ | Model comparison (simplified run) |
 
 ---
 
@@ -292,7 +318,7 @@ pip install -r requirements.txt
 python phase5/phase5_ml.py
 ```
 
-**Input:** `phase4_block/block_features.csv` *(included in repo)*
+**Input:** `phase5/outputs/block_features.csv` *(included in repo)*
 **Runtime:** 45–90 seconds
 **Output:** `phase5/outputs/` *(auto-created)*
 
@@ -303,38 +329,62 @@ python phase5/phase5_ml.py
 ```
 sustainable-resource_mapping/
 │
+├── .gitignore
+├── requirements.txt
+├── README.md
+│
 ├── phase1/
-│   ├── data_sources.md              # All 14 datasets with sources
-│   └── phase1_preprocessing.py     # Alignment verification script
+│   ├── README.md
+│   └── data/
+│       ├── districts.geojson        ← 30 Odisha district boundaries
+│       └── infrastructure.rar       ← roads, substations, transmission, rail shapefiles
 │
 ├── phase2/
-│   └── phase2_constraints.py       # Constraint map logic
+│   ├── README.md
+│   └── data/
+│       └── Odisha.geojson           ← State boundary used for clipping
 │
 ├── phase3/
-│   └── phase3_suitability.py       # MCDA weights and formula
+│   ├── README.md
+│   └── phase3.rar                   ← Suitability rasters + aligned rasters
 │
-├── phase4_block/
-│   ├── phase4_block.py             # Zonal statistics extraction
-│   ├── block_features.csv          # ← ML INPUT: 314 blocks × 7 features
-│   ├── top_solar_zones.gpkg
-│   ├── top_wind_zones.gpkg
-│   └── top_biomass_zones.gpkg
+├── phase4/                          ← District level (Astitva Tripathi)
+│   ├── README.md
+│   ├── Phase4.rar
+│   └── data/
+│       ├── district_features.csv    ← 30 districts × 7 features
+│       ├── top_solar_zones.geojson
+│       ├── top_wind_zones.geojson
+│       └── top_biomass_zones.geojson
+│
+├── phase4_block/                    ← Block level (Ashutosh Singh) ← used for ML
+│   ├── README.md
+│   ├── phase4_block.rar
+│   └── data/
+│       ├── blocksgeojson.rar        ← 314 block boundaries
+│       ├── top_solar_zones.geojson
+│       ├── top_wind_zones.geojson
+│       └── top_biomass_zones.geojson
 │
 ├── phase5/
-│   ├── phase5_ml.py                # Complete ML pipeline
-│   └── outputs/                    # Auto-generated
-│       ├── block_final_predictions.csv
-│       ├── random_forest_model.pkl
-│       └── *.png (9 visualizations)
+│   ├── phase5_ml.py                 ← Main ML pipeline (use this)
+│   ├── phase5_mllegacy.py           ← Earlier version for reference
+│   ├── outputs/                     ← Primary outputs
+│   │   ├── block_final_predictions.csv
+│   │   ├── block_features.csv
+│   │   ├── block_clusters.csv
+│   │   ├── random_forest_model.pkl
+│   │   ├── model_comparison.csv
+│   │   ├── ablation_study.csv
+│   │   ├── ahp_comparison.csv
+│   │   └── *.png (8 visualizations)
+│   └── new_output/                  ← Simplified model outputs
+│       ├── final_predictions_simple.csv
+│       ├── model_simple.pkl
+│       └── *.png + *.csv (simplified run)
 │
-├── phase6/                         # Web DSS — In Progress
-│   ├── index.html
-│   ├── style.css
-│   ├── app.js
-│   └── data/blocks_complete.geojson
-│
-├── requirements.txt
-└── README.md
+└── phase6/
+    └── README.md                    ← Web DSS spec — in progress
 ```
 
 ---
@@ -360,7 +410,7 @@ joblib>=1.3.0
 
 ## 🎓 Academic Contributions
 
-1. **Block-Level Resolution** — Upgraded from 30 districts to 314 blocks: 10× sample increase enabling statistically valid cross-validation
+1. **Two-Stage Feature Extraction** — District level (30) attempted first, upgraded to block level (314): 10× sample increase enabling statistically valid cross-validation
 2. **Multi-Model Validation** — K-Means + RF + XGBoost + AHP exceeds standard single-model practice
 3. **SHAP Explainability** — Per-block model decisions interpretable — publication-ready transparency
 4. **MAUP Quantification** — Scale-dependent prediction effects quantified for renewable energy site selection in Odisha
@@ -405,7 +455,7 @@ joblib>=1.3.0
 | Component | Requirement |
 |-----------|-------------|
 | Python | **3.11 specifically** — other versions have NumPy conflicts |
-| GIS | QGIS 3.x + OSGeo4W Shell (Phases 1–4 only) |
+| GIS | QGIS 3.x (Phases 1–4 only — all processing done manually) |
 | RAM | 8GB minimum (raster processing) |
 | Storage | ~2GB for full pipeline with raster outputs |
 | OS | Windows 10/11 fully tested; Linux/macOS for Phase 5 only |
