@@ -1,0 +1,449 @@
+# 🌿 Multi-Resource Renewable Energy Potential Mapping
+## ML-Based Decision Support System | Odisha, India
+
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3+-orange.svg)](https://scikit-learn.org/)
+[![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-red.svg)](https://xgboost.readthedocs.io/)
+[![QGIS](https://img.shields.io/badge/QGIS-3.x-green.svg)](https://qgis.org/)
+[![Status](https://img.shields.io/badge/status-Phase%205%20Complete-success.svg)](https://github.com/AshutoshSinghJ/sustainable-resource_mapping)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+---
+
+## 📋 Overview
+
+A comprehensive **6-phase geospatial machine learning pipeline** for optimal renewable energy site selection across **Odisha, India**. This system integrates 14 real spatial datasets, GIS-based constraint modeling, Multi-Criteria Decision Analysis (MCDA), and an advanced ML framework to generate actionable suitability maps for **Solar**, **Wind**, and **Biomass** energy installations at **block-level resolution across 314 administrative units**.
+
+**Key Innovation:** Multi-model ML framework combining unsupervised K-Means spatial clustering, supervised Random Forest classification, XGBoost cross-validation, Analytical Hierarchy Process (AHP) expert knowledge integration — with SHAP explainability and GridSearchCV hyperparameter optimization.
+
+> ⚠️ **Note on Raw Data:** Raster files (.tif, .gpkg >100MB each) are not hosted in this repository due to GitHub size limits. All Python scripts, the processed `block_features.csv` input, and Phase 5 outputs are included. Contact the project lead for raw data access.
+
+---
+
+## 👥 Team Roles & Contributions
+
+| Member | Role | Contribution |
+|--------|------|--------------|
+| **Ashutosh Singh** | **Project Lead & System Architect** | Complete project planning and system design, Phase 1 data collection and QGIS implementation, Python console automation (Phases 1–2), coordination across all 6 phases |
+| **Aryan Singh** | GIS Developer | Phase 2 spatial constraint modeling and buffer analysis |
+| **Keshav** | GIS Analyst | Phase 3 MCDA suitability scoring and raster processing |
+| **Astitva Tripathi** | GIS / Data Processing | Phase 4 block-level zonal statistics and feature extraction |
+| **Divyanshu Puri** | ML Engineer & GIS Developer | Phase 5 complete ML pipeline — K-Means, Random Forest, XGBoost, SHAP |
+| **Madhusudhan** | Data Processing / GIS Developer | Phase 6 DSS visualization and web output |
+
+### 🔧 Technical Contributions
+
+| Technical Area | Contributor |
+|----------------|-------------|
+| Project Architecture & Phase Workflow Design | Ashutosh Singh |
+| Phase 1 — Data Collection & QGIS Preprocessing | Ashutosh Singh |
+| Phase 2 — Constraint Mapping (QGIS + Python) | Ashutosh Singh, Aryan Singh |
+| Phase 3 — MCDA Suitability Modeling | Keshav |
+| Phase 4 — Block-Level Feature Extraction | Astitva Tripathi |
+| Phase 5 — ML Pipeline & Model Training | Divyanshu Puri |
+| Phase 6 — Web DSS & Visualization | Madhusudhan |
+| Python Console Automation (Phases 1–2) | Ashutosh Singh |
+| Machine Learning Model Design | Divyanshu Puri |
+| UI / Web Dashboard | *(Phase 6 — In Progress)* |
+
+---
+
+## 📊 The 6-Phase Methodology
+
+---
+
+### Phase 1: Data Acquisition & Preprocessing ✅
+**Lead:** Ashutosh Singh
+
+**Objective:** Assemble, clip, reproject, and align 14 geospatial datasets covering all factors relevant to renewable energy siting in Odisha.
+
+#### Datasets Collected (14 Total)
+
+| # | Dataset | Source | Used For |
+|---|---------|--------|----------|
+| 1 | GHI — Global Horizontal Irradiance | Global Solar Atlas | Solar radiation measurement |
+| 2 | PVout — PV Power Output | Global Solar Atlas | Solar electricity productivity |
+| 3 | Wind Speed at 100m height | Global Wind Atlas | Wind turbine feasibility |
+| 4 | DEM — Digital Elevation Model | SRTM / Copernicus | Slope and terrain filtering |
+| 5 | WDPA Protected Areas | protectedplanet.net | Legal exclusion zones |
+| 6 | Water Bodies | OpenStreetMap | Buffer constraint zones |
+| 7 | Roads and Highways | OpenStreetMap | Infrastructure proximity |
+| 8 | Transmission Lines | OpenStreetMap | Grid connection cost proxy |
+| 9 | Electrical Substations | OpenStreetMap | Grid connection points |
+| 10 | Population Density | WorldPop 2020 | Biomass demand proxy |
+| 11 | Land Cover | Dynamic World (Google Earth Engine) | Biomass scoring |
+| 12 | Odisha State Boundary | GADM Level 1 | Study area clipping |
+| 13 | District Boundaries | GADM Level 2 (30 districts) | District-level aggregation |
+| 14 | Block Boundaries | Census of India 2021 (Official) | Block-level ML analysis |
+
+#### Processing Steps
+- All 14 rasters clipped to Odisha state boundary
+- All layers reprojected to **EPSG:32645** (UTM Zone 45N — metric units)
+- Reference grid standardized to **267m × 267m** pixel resolution
+- All rasters aligned to reference grid shape **(2013 × 2422 pixels)**
+
+#### ⚠️ Critical Bug Caught and Fixed (Project Lead)
+> DEM slope was initially calculated in geographic coordinates (WGS84), producing an impossible mean slope of **87.94°**. Fixed by reprojecting DEM to UTM Zone 45N first, then computing slope — correct result: **6.51° mean slope**. Uncorrected, this would have invalidated the entire constraint map.
+
+---
+
+### Phase 2: Spatial Constraint Modeling ✅
+**Lead:**  Aryan Singh
+
+**Objective:** Create a binary constraint map identifying all locations legally prohibited or physically unsuitable for energy infrastructure.
+
+#### Constraints Applied
+
+| Constraint | Rule | Justification |
+|-----------|------|---------------|
+| Terrain Slope | Exclude > 10° | Equipment transport and foundation anchoring impossible |
+| WDPA Protected Areas | 1 km exclusion buffer | Legal prohibition — Indian environmental law |
+| Water Bodies | 500 m exclusion buffer | Flood risk and ecological protection |
+| Urban / Built-up Land | All dense urban areas excluded | No available land for large-scale infrastructure |
+
+**Output:** `constraint_map_267.tif` — Binary raster (1 = buildable, 0 = restricted)
+
+**Result:** **69.2% of Odisha** confirmed buildable (mean across 314 blocks)
+
+#### Technical Challenge Resolved
+> Initial rasterization set 0 as NoData value, causing QGIS Raster Calculator to fail silently and produce an all-zero output. Fixed by setting NoData = -9999 and pre-initializing rasters correctly. All four constraints combined using logical AND — a pixel must pass all four constraints to be classified as buildable.
+
+---
+
+### Phase 3: Suitability Modeling — MCDA ✅
+**Lead:** Keshav
+
+**Objective:** Create three normalized suitability score rasters (Solar, Wind, Biomass) using expert-weighted Multi-Criteria Decision Analysis.
+
+**Formula:** `Suitability = Σ(normalized_factor × weight) × constraint_mask`
+
+#### Solar Suitability Weights
+
+| Factor | Weight | Reason |
+|--------|--------|--------|
+| GHI Irradiance | 35% | Primary energy input driver |
+| PV Power Output | 25% | Direct electricity productivity |
+| Distance to Transmission | 20% | Grid connection cost |
+| Distance to Roads | 10% | Construction and maintenance access |
+| Distance to Substations | 10% | Secondary grid connection |
+
+#### Wind Suitability Weights
+
+| Factor | Weight | Reason |
+|--------|--------|--------|
+| Wind Speed at 100m | 40% | Primary energy driver |
+| Distance to Transmission | 25% | Grid connection cost |
+| Distance to Roads | 15% | Construction access |
+| Distance to Substations | 10% | Grid connection |
+| Population Density | 10% | Demand proximity |
+
+#### Biomass Suitability Weights
+
+| Factor | Weight | Reason |
+|--------|--------|--------|
+| Land Cover Biomass Score | 40% | Agricultural residue proxy |
+| Population Density | 30% | Demand and agricultural activity |
+| Distance to Roads | 20% | Feedstock transport cost |
+| Distance to Substations | 10% | Grid connection |
+
+#### Classification Decision — Why Percentile?
+> Fixed thresholds (e.g., GHI > 5.5) were initially applied but abandoned after finding **68% of all solar pixels** fell in one class — Odisha has relatively uniform irradiance across the state. Switched to **percentile-based classification** ensuring exactly 20% of pixels per class (Very High / High / Moderate / Low / Unsuitable). This produces a balanced, statistically meaningful and cartographically useful map.
+
+**Outputs:** `solar_suitability.tif`, `wind_suitability.tif`, `biomass_suitability.tif`
+
+---
+
+### Phase 4: Block-Level Feature Extraction ✅
+**Lead:** Astitva Tripathi
+
+**Objective:** Extract mean zonal statistics per administrative block to produce the 314-row ML training dataset.
+
+#### Scale Selection Rationale
+
+| Scale | Units | Decision | Reason |
+|-------|-------|----------|--------|
+| District | 30 | ❌ Rejected | Too small for statistically valid 5-fold CV |
+| **Block** | **314** | ✅ **Selected** | 10× sample increase — robust ML training |
+| Gram Panchayat | ~6,000 | ❌ Rejected | Too granular for 267m raster — spatial autocorrelation issues |
+
+**Block boundary source:** Official Census of India 2021 — `Odisha_Admin_Block_BND_2021.shp`
+
+#### Technical Issues Resolved
+
+**Raster Alignment:** Four rasters had a 1-pixel shape mismatch (2012×2421 vs reference 2013×2422). All four reprojected to exactly match reference solar raster grid before zonal statistics.
+
+**Population NoData:** WorldPop encodes NoData as -99999.0 (not NaN). Fixed by filtering to only pixels > 0 before computing mean — prevents -99999 contaminating block averages.
+
+#### Final Feature Statistics (314 Blocks — Zero Missing Values)
+
+| Feature | Source Raster | Mean Value | Unit |
+|---------|--------------|------------|------|
+| solar_mean | pvout_utm.tif | 4.097 | kWh/kWp/day |
+| wind_mean | wind_utm.tif | 4.004 | m/s |
+| pop_mean | population_utm.tif | 404.01 | persons/km² |
+| dist_roads_mean | dist_roads_aligned.tif | 4.596 | km |
+| dist_trans_mean | dist_trans_aligned.tif | 33.968 | km |
+| dist_sub_mean | dist_sub_aligned.tif | 43.492 | km |
+| constraint_pct | constraint_map_267.tif × 100 | 72.39 | % buildable |
+
+**Output:** `block_features.csv` — 314 rows × 8 columns ✅ Zero missing values confirmed
+
+#### GIS Zone Outputs
+
+| File | Count | Area |
+|------|-------|------|
+| `top_solar_zones.gpkg` | 1,302 zones | 102,059 km² |
+| `top_wind_zones.gpkg` | 133 zones | 3,783 km² |
+| `top_biomass_zones.gpkg` | 3,022 zones | 33,410 km² |
+
+---
+
+### Phase 5: Machine Learning Pipeline ✅
+**Lead:** Divyanshu Puri
+
+**Objective:** Train a multi-model ML system for automated block-level energy type prediction with full academic validation and explainability.
+
+#### Full Pipeline (10 Steps)
+
+| Step | Method | Output |
+|------|--------|--------|
+| 1 | Correlation Heatmap | Multicollinearity check |
+| 2 | K-Means (k=4) + Elbow + Silhouette | Spatial clustering + k validation |
+| 3 | Rule-Based Label Generation | SOLAR/WIND/BIOMASS/HYBRID training labels |
+| 4 | GridSearchCV (18 combinations) | Optimal RF hyperparameters |
+| 5 | Random Forest (200 trees, 5-fold CV) | Main classifier |
+| 6 | XGBoost (100 trees, lr=0.1) | Cross-algorithm validation |
+| 7 | AHP Expert Validation | Expert vs ML weight comparison |
+| 8 | SHAP Summary Plot | Per-block feature explainability |
+| 9 | Ablation Study | Individual feature contribution |
+| 10 | Confidence Override | <60% confidence → HYBRID |
+
+#### Academic Enhancements
+- ✅ **Correlation Analysis** — No feature pairs exceeded 0.85 threshold
+- ✅ **k-Optimization** — Elbow + Silhouette both validate k=4
+- ✅ **GridSearchCV** — 18 hyperparameter combinations, best params applied
+- ✅ **Ablation Study** — wind_mean confirmed most critical feature (6.7% drop)
+- ✅ **MAUP Analysis** — Block vs district scale prediction shift quantified
+- ✅ **SHAP Explainability** — Per-block model interpretation, not just global importance
+
+#### Model Performance
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| **RF CV Accuracy** | **97.8% ± 1.3%** | Excellent predictive power |
+| **XGBoost Accuracy** | **97.5% ± 1.4%** | Strong algorithm agreement |
+| **Silhouette Score** | 0.234 | Fair cluster separation at k=4 |
+| **High Confidence Blocks** | 72% | Majority predictions > 80% confidence |
+| **AHP–RF Correlation** | r = 0.68 | Phase 3 expert weights validated by ML |
+
+#### Prediction Distribution
+
+| Energy Type | Blocks | % | Notes |
+|------------|--------|---|-------|
+| 🟠 SOLAR | 250 | 80% | High irradiance dominant across Odisha |
+| 🟣 HYBRID | 62 | 20% | Mixed-resource transition zones |
+| 🔵 WIND | 2 | 0.6% | Limited high-wind corridors |
+| 🟢 BIOMASS | 0 | 0% | Insufficient standalone signal from population proxy |
+
+#### Phase 5 Output Files
+
+| File | Description |
+|------|-------------|
+| `block_final_predictions.csv` | 314 blocks with cluster, RF prediction, confidence, final label |
+| `random_forest_model.pkl` | Trained and tuned RF model (serialized) |
+| `correlation_heatmap.png` | Feature multicollinearity matrix |
+| `optimal_k_selection.png` | Elbow + Silhouette validation curves |
+| `feature_importance.png` | RF feature importance bar chart |
+| `shap_summary.png` | SHAP value summary — model explainability |
+| `confusion_matrix.png` | RF prediction accuracy heatmap |
+| `ahp_validation.png` | AHP expert weights vs RF importance comparison |
+| `ablation_study.png` | Feature contribution quantification chart |
+| `model_comparison.csv` | RF vs XGBoost side-by-side accuracy table |
+
+---
+
+### Phase 6: Decision Support System & Web Visualization 🔄 *(In Progress)*
+**Lead:** Madhusudhan
+
+**Objective:** Dark-themed interactive web DSS with 4 core map views and ML dashboard — deployed publicly via GitHub Pages.
+
+#### Core Map Views
+1. **Solar Suitability Heatmap** — Block choropleth, red-to-green (solar_mean)
+2. **Wind Suitability Heatmap** — Block choropleth, light-to-dark blue (wind_mean)
+3. **Biomass Suitability Heatmap** — Block choropleth, yellow-to-green (pop_mean)
+4. **Optimal Resource Allocation Map** — Each block colored by final ML prediction
+
+Color scheme: 🟠 SOLAR `#FF8C00` | 🔵 WIND `#1E90FF` | 🟢 BIOMASS `#32CD32` | 🟣 HYBRID `#9B59B6`
+
+**Tech Stack:** HTML + CSS + Leaflet.js + Chart.js
+
+**Deployment:** GitHub Pages
+
+**Live Demo:** *(Coming soon)*
+
+---
+
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/AshutoshSinghJ/sustainable-resource_mapping.git
+cd sustainable-resource_mapping
+pip install -r requirements.txt
+python phase5/phase5_ml.py
+```
+
+**Input:** `phase4_block/block_features.csv` *(included in repo)*
+**Runtime:** 45–90 seconds
+**Output:** `phase5/outputs/` *(auto-created)*
+
+---
+
+## 📂 Repository Structure
+
+```
+sustainable-resource_mapping/
+│
+├── phase1/
+│   ├── data_sources.md              # All 14 datasets with sources
+│   └── phase1_preprocessing.py     # Alignment verification script
+│
+├── phase2/
+│   └── phase2_constraints.py       # Constraint map logic
+│
+├── phase3/
+│   └── phase3_suitability.py       # MCDA weights and formula
+│
+├── phase4_block/
+│   ├── phase4_block.py             # Zonal statistics extraction
+│   ├── block_features.csv          # ← ML INPUT: 314 blocks × 7 features
+│   ├── top_solar_zones.gpkg
+│   ├── top_wind_zones.gpkg
+│   └── top_biomass_zones.gpkg
+│
+├── phase5/
+│   ├── phase5_ml.py                # Complete ML pipeline
+│   └── outputs/                    # Auto-generated
+│       ├── block_final_predictions.csv
+│       ├── random_forest_model.pkl
+│       └── *.png (9 visualizations)
+│
+├── phase6/                         # Web DSS — In Progress
+│   ├── index.html
+│   ├── style.css
+│   ├── app.js
+│   └── data/blocks_complete.geojson
+│
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 📦 Requirements
+
+```
+pandas>=2.0.0
+numpy==1.26.4
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+shap>=0.43.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+rasterstats==0.20.0
+rasterio==1.3.10
+geopandas>=1.1.2
+shapely>=2.0.0
+joblib>=1.3.0
+```
+
+---
+
+## 🎓 Academic Contributions
+
+1. **Block-Level Resolution** — Upgraded from 30 districts to 314 blocks: 10× sample increase enabling statistically valid cross-validation
+2. **Multi-Model Validation** — K-Means + RF + XGBoost + AHP exceeds standard single-model practice
+3. **SHAP Explainability** — Per-block model decisions interpretable — publication-ready transparency
+4. **MAUP Quantification** — Scale-dependent prediction effects quantified for renewable energy site selection in Odisha
+5. **Full Pipeline Reproducibility** — Raw data → constraint map → MCDA → ML → web DSS, fully documented
+
+---
+
+## 🗺️ Data Sources
+
+| Dataset | Source |
+|---------|--------|
+| Solar (GHI, PVout) | globalsolaratlas.info |
+| Wind Speed 100m | globalwindatlas.info |
+| DEM / Terrain | earthexplorer.usgs.gov |
+| Protected Areas | protectedplanet.net |
+| Roads, OSM layers | geofabrik.de |
+| Population | worldpop.org |
+| Land Cover | Google Earth Engine — Dynamic World |
+| Block Boundaries | github.com/justinelliotmeyers/Odisha_2021_Official_Boundaries |
+
+---
+
+## 📖 Citation
+
+```bibtex
+@software{odisha_renewable_ml_2026,
+  author      = {Ashutosh Singh and Aryan Singh and Keshav and
+                 Astitva Tripathi and Divyanshu Puri and Madhusudhan},
+  title       = {Multi-Resource Renewable Energy Potential Mapping:
+                 ML-Based Decision Support System for Odisha, India},
+  year        = {2026},
+  institution = {KIIT University, Bhubaneswar},
+  publisher   = {GitHub},
+  howpublished = {\url{https://github.com/AshutoshSinghJ/sustainable-resource_mapping}}
+}
+```
+
+---
+
+## 🛠️ System Requirements
+
+| Component | Requirement |
+|-----------|-------------|
+| Python | **3.11 specifically** — other versions have NumPy conflicts |
+| GIS | QGIS 3.x + OSGeo4W Shell (Phases 1–4 only) |
+| RAM | 8GB minimum (raster processing) |
+| Storage | ~2GB for full pipeline with raster outputs |
+| OS | Windows 10/11 fully tested; Linux/macOS for Phase 5 only |
+
+---
+
+## 📧 Contact & Team
+
+This project was collaboratively developed at **KIIT University, Bhubaneswar** (2025–2026).
+
+| Member | Role | GitHub |
+|--------|------|--------|
+| Ashutosh Singh | Project Lead & System Architect | [@AshutoshSinghJ](https://github.com/AshutoshSinghJ) |
+| Divyanshu Puri | ML Engineer & GIS Developer | [@assassindiv](https://github.com/assassindiv) |
+| Aryan Singh | GIS Developer | *(add GitHub if available)* |
+| Keshav | GIS Analyst | *(add GitHub if available)* |
+| Astitva Tripathi | GIS / Data Processing | *(add GitHub if available)* |
+| Madhusudhan | Data Processing / GIS Developer | *(add GitHub if available)* |
+
+**Repository:** [github.com/AshutoshSinghJ/sustainable-resource_mapping](https://github.com/AshutoshSinghJ/sustainable-resource_mapping)
+
+**For questions or collaboration:** Open a [GitHub Issue](https://github.com/AshutoshSinghJ/sustainable-resource_mapping/issues) and tag the relevant team member.
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Saaty, T.L. (1980) — *The Analytic Hierarchy Process* — AHP weighting
+- Openshaw, S. (1984) — *The Modifiable Areal Unit Problem*
+- Hengl et al. (2018) — *Random Forest for spatial prediction*
+- Lundberg & Lee (2017) — *A Unified Approach to Interpreting Model Predictions* — SHAP
+
+---
+
+**Last Updated:** March 2026 | **Version:** 3.0 | **Status:** Phase 5 ✅ Complete | Phase 6 🔄 In Progress
