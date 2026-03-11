@@ -44,7 +44,7 @@ A comprehensive **6-phase geospatial machine learning pipeline** for optimal ren
 | Phase 5 — ML Pipeline & Model Training | Divyanshu Puri |
 | Phase 6 — Web DSS & Visualization | Madhusudhan |
 | Machine Learning Model Design | Divyanshu Puri |
-| UI / Web Dashboard | *(Phase 6 — In Progress)* |
+| UI / Web Dashboard |Madhusudhan|
 
 ---
 
