@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Odisha Renewable Energy DSS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header id="main-header">
+    <div id="header-left">
+      <h1>⚡ Odisha Renewable Energy Decision Support System</h1>
+      <p id="header-subtitle">314 Blocks Analyzed &nbsp;|&nbsp; Random Forest Model &nbsp;|&nbsp; 14 Geospatial Datasets</p>
+    </div>
+    <div id="header-right">
+      <button class="tab-btn active" id="btn-map" onclick="showTab('map')">🗺️ Map View</button>
+      <button class="tab-btn" id="btn-ml" onclick="showTab('ml')">📊 ML Results</button>
+    </div>
+  </header>
+
+  <!-- MAP TAB -->
+  <div id="tab-map" class="tab-content active">
+
+    <!-- Left Panel -->
+    <div id="control-panel">
+
+      <div class="panel-section">
+        <h3>🗂️ Map Layer</h3>
+        <label class="radio-option">
+          <input type="radio" name="layer" value="allocation" checked onchange="switchLayer(this.value)"/>
+          Optimal Allocation
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="layer" value="solar" onchange="switchLayer(this.value)"/>
+          Solar Suitability
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="layer" value="wind" onchange="switchLayer(this.value)"/>
+          Wind Suitability
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="layer" value="biomass" onchange="switchLayer(this.value)"/>
+          Biomass Suitability
+        </label>
+      </div>
+
+      <div class="panel-section">
+        <h3>🏗️ Hotspot Overlays</h3>
+        <label class="check-option">
+          <input type="checkbox" onchange="toggleOverlay('solar')"/>
+          ☀️ Top Solar Hotspots
+        </label>
+        <label class="check-option">
+          <input type="checkbox" onchange="toggleOverlay('wind')"/>
+          💨 Top Wind Hotspots
+        </label>
+        <label class="check-option">
+          <input type="checkbox" onchange="toggleOverlay('biomass')"/>
+          🌿 Top Biomass Hotspots
+        </label>
+      </div>
+
+      <div class="panel-section">
+        <h3>🎯 Confidence Filter</h3>
+        <p class="slider-label">Min confidence: <span id="conf-value">0%</span></p>
+        <input type="range" id="conf-slider" min="0" max="100" value="0"
+               oninput="filterByConfidence(this.value)"/>
+      </div>
+
+      <div class="panel-section" id="legend-box">
+        <h3>🔑 Legend</h3>
+        <div class="legend-item"><span class="legend-dot solar"></span> Solar</div>
+        <div class="legend-item"><span class="legend-dot wind"></span> Wind</div>
+        <div class="legend-item"><span class="legend-dot biomass"></span> Biomass</div>
+        <div class="legend-item"><span class="legend-dot hybrid"></span> Hybrid</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#445566"></span> Below threshold</div>
+      </div>
+
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Right Detail Panel -->
+    <div id="detail-panel">
+      <div id="detail-default">
+        <h3>📍 Block Details</h3>
+        <p style="color:#8899bb; margin-top:10px; font-size:0.82rem; line-height:1.6;">
+          Click any block on the map to see its full renewable energy profile.
+        </p>
+        <div id="summary-stats">
+          <h4 style="margin-top:20px; color:#6688cc; font-family:'Rajdhani',sans-serif; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px;">Odisha Summary</h4>
+          <div id="summary-content" style="margin-top:10px;">Loading...</div>
+        </div>
+      </div>
+
+      <div id="detail-block" style="display:none;">
+        <button id="close-detail" onclick="closeDetail()">✕ Close</button>
+        <h3 id="detail-block-name"></h3>
+        <p id="detail-district"></p>
+        <div id="detail-prediction-badge"></div>
+
+        <div class="detail-section">
+          <p class="detail-label">Confidence Score</p>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="detail-confidence-bar"></div>
+          </div>
+          <p id="detail-confidence-text"></p>
+        </div>
+
+        <div class="detail-section">
+          <p class="detail-label">K-Means Cluster</p>
+          <p id="detail-cluster" style="color:#aabbcc; font-size:0.9rem;"></p>
+        </div>
+
+        <div class="detail-section">
+          <p class="detail-label">Feature Values</p>
+          <table id="detail-features-table"></table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end tab-map -->
+
+  <!-- BOTTOM STATS BAR -->
+  <div id="stats-bar">
+    <div class="stat-item">☀️ Solar: <span id="stat-solar">-</span></div>
+    <div class="stat-item">💨 Wind: <span id="stat-wind">-</span></div>
+    <div class="stat-item">🌿 Biomass: <span id="stat-biomass">-</span></div>
+    <div class="stat-item">⚡ Hybrid: <span id="stat-hybrid">-</span></div>
+    <div class="stat-item">🎯 High Confidence (≥80%): <span id="stat-highconf">-</span></div>
+    <div class="stat-item">📊 Showing: <span id="stat-showing">-</span> blocks</div>
+  </div>
+
+  <!-- ML RESULTS TAB -->
+  <div id="tab-ml" class="tab-content">
+    <div id="ml-container">
+      <h2>📊 Machine Learning Validation Results</h2>
+      <p style="color:#6688aa; margin-bottom:28px; font-size:0.88rem;">
+        Random Forest model trained on 314 Odisha blocks using 7 geospatial features.
+      </p>
+      <div class="ml-grid">
+
+        <div class="ml-card">
+          <h4>Feature Importance</h4>
+          <p>Which input features had the most influence on predictions. Higher bars mean more important features in determining Solar vs Wind vs Biomass allocation.</p>
+          <img src="images/feature_importance.png" alt="Feature Importance"/>
+        </div>
+
+        <div class="ml-card">
+          <h4>Confusion Matrix</h4>
+          <p>Prediction accuracy per energy class. Diagonal = correct predictions. Off-diagonal = misclassifications between energy types.</p>
+          <img src="images/confusion_matrix.png" alt="Confusion Matrix"/>
+        </div>
+
+        <div class="ml-card">
+          <h4>Correlation Heatmap</h4>
+          <p>How correlated the 7 input features are with each other. Checks for multicollinearity which can affect model reliability.</p>
+          <img src="images/correlation_heatmap.png" alt="Correlation Heatmap"/>
+        </div>
+
+        <div class="ml-card">
+          <h4>AHP Validation</h4>
+          <p>Compares Random Forest predictions against expert-based AHP scoring to validate that ML results align with domain knowledge.</p>
+          <img src="images/ahp_validation.png" alt="AHP Validation"/>
+        </div>
+
+        <div class="ml-card">
+          <h4>Model Comparison</h4>
+          <p>Random Forest vs XGBoost accuracy comparison across key performance metrics.</p>
+          <img src="images/model_comparison.png" alt="Model Comparison"/>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
